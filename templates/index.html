@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuMind | AI Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div class="app-container">
+
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">D</div>
+                <span>DocuMind</span>
+            </div>
+
+            <div class="sidebar-label">WORKSPACE</div>
+
+            <div class="sidebar-item active">
+                <span>✦</span> AI Assistant
+            </div>
+
+            <div class="sidebar-item">
+                <span>▤</span> My Documents
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-label">YOUR AI WORKSPACE</div>
+                <p>Upload documents or explore ideas with AI.</p>
+                <div class="version">DOCUMIND · 1.0</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+                <div>
+                    <div class="breadcrumb">Workspace / <span>AI Assistant</span></div>
+                </div>
+                <div class="status">
+                    <span class="status-dot"></span>
+                    AI System Ready
+                </div>
+            </header>
+
+            <section class="workspace">
+
+                <div class="welcome-section">
+                    <div class="welcome-badge">✦ YOUR PERSONAL AI RESEARCH ASSISTANT</div>
+                    <h1>Understand your documents.<br><span>Think beyond pages.</span></h1>
+                    <p>Upload a PDF, ask questions, and discover insights through intelligent AI-powered conversations.</p>
+                </div>
+
+                <div class="mode-selector">
+                    <div class="mode-selector-heading">
+                        <h2>Choose your AI mode</h2>
+                        <p>Switch between document intelligence and general AI.</p>
+                    </div>
+
+                    <div class="mode-buttons">
+                        <button type="button" class="mode-button active" id="pdfModeButton">
+                            <span class="mode-icon">▤</span>
+                            <span>
+                                <strong>PDF Mode</strong>
+                                <small>Chat with your documents</small>
+                            </span>
+                        </button>
+
+                        <button type="button" class="mode-button" id="generalModeButton">
+                            <span class="mode-icon">✦</span>
+                            <span>
+                                <strong>General AI</strong>
+                                <small>Ask anything with AI</small>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="document-card" id="documentCard">
+
+                    <div class="card-heading">
+                        <div>
+                            <h2>Your Document</h2>
+                            <p>Upload a PDF to begin your conversation.</p>
+                        </div>
+                        <div class="file-icon">PDF</div>
+                    </div>
+
+                    <label for="pdfInput" class="upload-area" id="uploadArea">
+                        <div class="upload-icon">↑</div>
+                        <h3>Drop your PDF here</h3>
+                        <p>or <span>browse files</span> from your computer</p>
+                        <small>PDF files only · Maximum size 20 MB</small>
+                        <input type="file" id="pdfInput" accept=".pdf,application/pdf" hidden>
+                    </label>
+
+                    <div id="uploadStatus" class="upload-status"></div>
+
+                </div>
+
+                <div class="chat-card">
+
+                    <div class="chat-header">
+                        <div>
+                            <h2>AI Conversation</h2>
+                            <p id="chatSubtitle">Ask anything about your uploaded document.</p>
+                        </div>
+                        <div class="ai-badge">GEMINI AI</div>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="empty-chat">
+                            <div class="empty-icon">✧</div>
+                            <h3>Your conversation starts here</h3>
+                            <p>Upload a PDF above, then ask your first question.</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <textarea id="questionInput" placeholder="Upload a PDF first..." rows="1" disabled></textarea>
+                        <button id="sendButton" disabled>↑</button>
+                    </div>
+
+                    <div class="input-footer">AI-generated answers may need verification. Always check important information.</div>
+
+                </div>
+
+            </section>
+
+            <footer class="footer">
+                <span>DocuMind © 2026</span>
+                <span>Built for smarter document understanding.</span>
+            </footer>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/loading.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat-history.js') }}"></script>
+<script src="{{ url_for('static', filename='js/retry.js') }}"></script>
+<script src="{{ url_for('static', filename='js/clear-chat.js') }}"></script>`r`n<script src="{{ url_for('static', filename='js/export-chat.js') }}"></script>`r`n</body>
+</html>
+
+
+
+
+
