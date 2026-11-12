@@ -1,4 +1,4 @@
-﻿Flask
+Flask
 PyMuPDF
 python-dotenv
 google-genai
