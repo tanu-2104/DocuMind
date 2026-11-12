@@ -2,3 +2,5 @@
 PyMuPDF
 python-dotenv
 google-genai
+
+supabase

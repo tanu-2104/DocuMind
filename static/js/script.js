@@ -348,20 +348,87 @@ async function uploadPDF(file) {
 
     isUploading = true;
 
-    uploadStatus.textContent = "Uploading and processing your PDF...";
+    uploadStatus.textContent = "Preparing your PDF upload...";
     uploadStatus.className = "upload-status";
 
     questionInput.disabled = true;
     sendButton.disabled = true;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-        const response = await fetch("/upload", {
-            method: "POST",
-            body: formData
-        });
+        // Detect local or cloud mode.
+        const modeResponse = await fetch("/upload-mode");
+        const modeData = await modeResponse.json();
+
+        if (!modeResponse.ok) {
+            throw new Error(modeData.error || "Could not detect upload mode.");
+        }
+
+        let response;
+
+        if (modeData.mode === "cloud") {
+            // Step 1: Request a temporary Supabase upload URL.
+            uploadStatus.textContent = "Preparing secure cloud upload...";
+
+            const urlResponse = await fetch("/create-upload", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    filename: file.name
+                })
+            });
+
+            const uploadData = await urlResponse.json();
+
+            if (!urlResponse.ok) {
+                throw new Error(uploadData.error || "Could not prepare cloud upload.");
+            }
+
+            // Step 2: Upload PDF directly to Supabase.
+            uploadStatus.textContent = "Uploading PDF to secure cloud storage...";
+
+            const storageResponse = await fetch(uploadData.signed_url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/pdf",
+                    "x-upsert": "false"
+                },
+                body: file
+            });
+
+            if (!storageResponse.ok) {
+                throw new Error(
+                    `Cloud storage upload failed (HTTP ${storageResponse.status}).`
+                );
+            }
+
+            // Step 3: Ask Flask to extract text and save document metadata.
+            uploadStatus.textContent = "Processing your PDF...";
+
+            response = await fetch("/complete-upload", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    filename: uploadData.filename,
+                    stored_filename: uploadData.stored_filename
+                })
+            });
+
+        } else {
+            // Existing local SQLite upload workflow.
+            uploadStatus.textContent = "Uploading and processing your PDF...";
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            response = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+        }
 
         const data = await response.json();
 
@@ -387,16 +454,18 @@ async function uploadPDF(file) {
         );
 
     } catch (error) {
+        console.error("PDF upload error:", error);
+
         uploadStatus.textContent = error.message;
         uploadStatus.className = "upload-status error";
 
         questionInput.disabled = !currentDocumentId;
         sendButton.disabled = !currentDocumentId;
+
     } finally {
         isUploading = false;
     }
 }
-
 
 // File selection.
 pdfInput.addEventListener("change", () => {
@@ -522,3 +591,5 @@ questionInput.addEventListener("keydown", (event) => {
 
 // Initial mode.
 switchMode("pdf");
+
+

@@ -1,9 +1,13 @@
 ﻿import time
+import socket
 from google import genai
 from google.genai import types
 from config import GEMINI_API_KEY, GEMINI_MODEL
 
-# Disable automatic SDK retries and set a 30-second timeout.
+FALLBACK_MODEL = "gemini-3.1-flash-lite"
+RETRY_DELAY = 2
+MAX_ATTEMPTS = 2
+
 client = genai.Client(
     api_key=GEMINI_API_KEY,
     http_options=types.HttpOptions(
@@ -13,50 +17,103 @@ client = genai.Client(
 )
 
 
+def is_retryable_error(error):
+    error_text = str(error).upper()
+    error_type = type(error).__name__.upper()
+
+    retry_codes = [
+        "429", "500", "502", "503", "504",
+        "UNAVAILABLE", "RESOURCE_EXHAUSTED",
+        "INTERNAL", "TIMEOUT", "TIMED OUT",
+        "DEADLINE EXCEEDED"
+    ]
+
+    return (
+        isinstance(error, (TimeoutError, socket.timeout))
+        or any(code in error_text for code in retry_codes)
+        or any(code in error_type for code in [
+            "TIMEOUT", "READTIMEOUT", "CONNECTTIMEOUT"
+        ])
+    )
+
+
 def generate_response(prompt):
     start_time = time.perf_counter()
 
-    try:
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt
-        )
+    models = list(dict.fromkeys([
+        GEMINI_MODEL,
+        FALLBACK_MODEL
+    ]))
 
-        if not response.text:
-            raise ValueError("Gemini returned an empty response.")
+    last_error = None
 
-        elapsed = time.perf_counter() - start_time
+    for model in models:
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                print(
+                    f"[DocuMind] Trying {model} "
+                    f"(attempt {attempt}/{MAX_ATTEMPTS})",
+                    flush=True
+                )
+
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt
+                )
+
+                if not response.text:
+                    raise ValueError("Gemini returned an empty response.")
+
+                elapsed = time.perf_counter() - start_time
+
+                print(
+                    f"[DocuMind] Successful model: {model}",
+                    flush=True
+                )
+                print(
+                    f"[DocuMind] Response time: {elapsed:.2f} seconds",
+                    flush=True
+                )
+
+                return response.text.strip()
+
+            except Exception as error:
+                last_error = error
+
+                print(
+                    f"[DocuMind] {model} failed: {error}",
+                    flush=True
+                )
+
+                if not is_retryable_error(error):
+                    raise RuntimeError(
+                        f"AI service error: {error}"
+                    ) from error
+
+                if attempt < MAX_ATTEMPTS:
+                    print(
+                        f"[DocuMind] Retrying {model} "
+                        f"after {RETRY_DELAY} seconds...",
+                        flush=True
+                    )
+                    time.sleep(RETRY_DELAY)
+
         print(
-            f"[DocuMind] Gemini response time: {elapsed:.2f} seconds",
+            f"[DocuMind] Moving to next model if available.",
             flush=True
         )
 
-        return response.text.strip()
+    elapsed = time.perf_counter() - start_time
 
-    except Exception as error:
-        elapsed = time.perf_counter() - start_time
-        print(f"[DocuMind] Original Gemini error: {error}", flush=True)
-        error_text = str(error).upper()
+    print(
+        f"[DocuMind] All attempts failed after {elapsed:.2f} seconds.",
+        flush=True
+    )
 
-        print(
-            f"[DocuMind] Request failed after {elapsed:.2f} seconds.",
-            flush=True
-        )
-
-        retryable = any(code in error_text for code in [
-            "429", "500", "502", "503", "504",
-            "UNAVAILABLE", "RESOURCE_EXHAUSTED", "INTERNAL"
-        ])
-
-        if retryable:
-            raise RuntimeError(
-                "Gemini is temporarily busy. Please try again shortly. "
-                "Your uploaded document is safe."
-            ) from error
-
-        raise RuntimeError(
-            f"AI service error: {error}"
-        ) from error
+    raise RuntimeError(
+        "Gemini is temporarily unavailable. "
+        "Please try again shortly. Your uploaded document is safe."
+    ) from last_error
 
 
 def ask_question(document_text, question):
@@ -113,4 +170,3 @@ ANSWER:
 """
 
     return generate_response(prompt)
-
