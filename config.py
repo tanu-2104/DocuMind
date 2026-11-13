@@ -18,8 +18,15 @@ if STORAGE_MODE not in {"local", "cloud"}:
 
 CLOUD_MODE = STORAGE_MODE == "cloud"
 
-UPLOAD_FOLDER = BASE_DIR / "uploads"
-DATABASE_PATH = BASE_DIR / "database" / "documind.db"
+# Local storage uses project folders.
+# Cloud mode uses Vercel's writable temporary directory.
+if CLOUD_MODE:
+    RUNTIME_DIR = Path("/tmp/documind")
+else:
+    RUNTIME_DIR = BASE_DIR
+
+UPLOAD_FOLDER = RUNTIME_DIR / "uploads"
+DATABASE_PATH = RUNTIME_DIR / "database" / "documind.db"
 
 MAX_CONTENT_LENGTH = 20 * 1024 * 1024
 
@@ -29,5 +36,6 @@ if not GEMINI_API_KEY:
 if not SECRET_KEY:
     raise RuntimeError("Flask SECRET_KEY is missing. Check your environment variables.")
 
-UPLOAD_FOLDER.mkdir(exist_ok=True)
-DATABASE_PATH.parent.mkdir(exist_ok=True)
+# Create directories only in the writable runtime location.
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
